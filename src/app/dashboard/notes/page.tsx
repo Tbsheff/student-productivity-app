@@ -40,16 +40,17 @@ export default async function NotesPage() {
 
   // Extract unique tags from all notes
   const allTags =
-    notes?.reduce((tags, note) => {
-      if (note.tags && Array.isArray(note.tags)) {
-        note.tags.forEach((tag) => {
-          if (!tags.includes(tag)) {
-            tags.push(tag);
-          }
-        });
-      }
-      return tags;
-    }, []) || [];
+  notes?.reduce<string[]>((tags, note) => {
+    if (note.tags && Array.isArray(note.tags)) {
+      note.tags.forEach((tag: string) => { // Explicitly type `tag`
+        if (!tags.includes(tag)) {
+          tags.push(tag);
+        }
+      });
+    }
+    return tags;
+  }, []) || [];
+
 
   return (
     <DashboardShell title="Notes">
