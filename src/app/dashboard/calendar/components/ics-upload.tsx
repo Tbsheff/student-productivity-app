@@ -14,6 +14,15 @@ import { FileUp, RefreshCw, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { createClient } from "@/utils/supabase-client";
 
+interface IcsEvent {
+  title: string;
+  description?: string;
+  start_time: string;
+  end_time?: string;
+  uid: string;
+  location?: string;
+}
+
 export default function IcsUpload() {
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -63,7 +72,7 @@ export default function IcsUpload() {
       // Reset the file input
       const fileInput = document.getElementById("ics-file") as HTMLInputElement;
       if (fileInput) fileInput.value = "";
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error uploading ICS file:", err);
       setError(
         err.message ||
@@ -89,11 +98,11 @@ export default function IcsUpload() {
     });
   };
 
-  const parseIcsData = (icsData: string) => {
+  const parseIcsData = (icsData: string): IcsEvent[] => {
     // Enhanced ICS parsing logic
-    const events = [];
+    const events: IcsEvent[] = [];
     const lines = icsData.split(/\r\n|\n|\r/);
-    let currentEvent = null;
+    let currentEvent: Partial<IcsEvent> | null = null;
     let continuationLine = "";
 
     for (let i = 0; i < lines.length; i++) {
@@ -118,7 +127,7 @@ export default function IcsUpload() {
           if (!currentEvent.uid) {
             currentEvent.uid = `ics-import-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
           }
-          events.push(currentEvent);
+          events.push(currentEvent as IcsEvent);
         }
         currentEvent = null;
       } else if (currentEvent) {
@@ -131,16 +140,18 @@ export default function IcsUpload() {
           // Handle different date formats
           const colonIndex = line.indexOf(":");
           if (colonIndex !== -1) {
-            currentEvent.start_time = formatIcsDate(
-              line.substring(colonIndex + 1),
-            );
+            const formattedDate = formatIcsDate(line.substring(colonIndex + 1));
+            if (formattedDate) {
+              currentEvent.start_time = formattedDate;
+            }
           }
         } else if (line.startsWith("DTEND")) {
           const colonIndex = line.indexOf(":");
           if (colonIndex !== -1) {
-            currentEvent.end_time = formatIcsDate(
-              line.substring(colonIndex + 1),
-            );
+            const formattedDate = formatIcsDate(line.substring(colonIndex + 1));
+            if (formattedDate) {
+              currentEvent.end_time = formattedDate;
+            }
           }
         } else if (line.startsWith("UID:")) {
           currentEvent.uid = line.substring(4);
@@ -153,7 +164,7 @@ export default function IcsUpload() {
     return events;
   };
 
-  const formatIcsDate = (icsDate: string) => {
+  const formatIcsDate = (icsDate: string): string | null => {
     // Handle different ICS date formats
 
     // Format: 20240710T150000Z (basic format)
@@ -203,7 +214,7 @@ export default function IcsUpload() {
     return null;
   };
 
-  const storeEvents = async (events) => {
+  const storeEvents = async (events: IcsEvent[]): Promise<void> => {
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) throw new Error("User not authenticated");
 

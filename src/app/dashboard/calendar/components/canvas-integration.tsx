@@ -21,6 +21,15 @@ import { ArrowUpRight, Check, RefreshCw, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { createClient } from "@/utils/supabase-client";
 
+interface IcsEvent {
+  title: string;
+  description?: string;
+  start_time: string;
+  end_time?: string;
+  uid: string;
+  location?: string;
+}
+
 export default function CanvasIntegration() {
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -72,7 +81,7 @@ export default function CanvasIntegration() {
       setIsConnected(true);
       setLastSynced(new Date().toLocaleString());
       setShowDialog(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error connecting to Canvas:", error);
       setError(
         error.message ||
@@ -83,11 +92,11 @@ export default function CanvasIntegration() {
     }
   };
 
-  const parseIcsData = (icsData) => {
+  const parseIcsData = (icsData: string): IcsEvent[] => {
     // Enhanced ICS parsing logic
-    const events = [];
+    const events: IcsEvent[] = [];
     const lines = icsData.split(/\r\n|\n|\r/);
-    let currentEvent = null;
+    let currentEvent: Partial<IcsEvent> | null = null;
     let continuationLine = "";
 
     for (let i = 0; i < lines.length; i++) {
@@ -112,7 +121,7 @@ export default function CanvasIntegration() {
           if (!currentEvent.uid) {
             currentEvent.uid = `canvas-import-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
           }
-          events.push(currentEvent);
+          events.push(currentEvent as IcsEvent);
         }
         currentEvent = null;
       } else if (currentEvent) {
@@ -125,16 +134,20 @@ export default function CanvasIntegration() {
           // Handle different date formats
           const colonIndex = line.indexOf(":");
           if (colonIndex !== -1) {
-            currentEvent.start_time = formatIcsDate(
-              line.substring(colonIndex + 1),
-            );
+            const formattedDate = formatIcsDate(line.substring(colonIndex + 1));
+            // Only assign if not null to satisfy TypeScript
+            if (formattedDate !== null) {
+              currentEvent.start_time = formattedDate;
+            }
           }
         } else if (line.startsWith("DTEND")) {
           const colonIndex = line.indexOf(":");
           if (colonIndex !== -1) {
-            currentEvent.end_time = formatIcsDate(
-              line.substring(colonIndex + 1),
-            );
+            const formattedDate = formatIcsDate(line.substring(colonIndex + 1));
+            // Only assign if not null to satisfy TypeScript
+            if (formattedDate !== null) {
+              currentEvent.end_time = formattedDate;
+            }
           }
         } else if (line.startsWith("UID:")) {
           currentEvent.uid = line.substring(4);
@@ -147,7 +160,7 @@ export default function CanvasIntegration() {
     return events;
   };
 
-  const formatIcsDate = (icsDate) => {
+  const formatIcsDate = (icsDate: string): string | null => {
     // Handle different ICS date formats
 
     // Format: 20240710T150000Z (basic format)
@@ -197,52 +210,67 @@ export default function CanvasIntegration() {
     return null;
   };
 
-  const storeEvents = async (events) => {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) throw new Error("User not authenticated");
+  const storeEvents = async (events: IcsEvent[]) => {
+    try {
+      const { data: userData, error: authError } =
+        await supabase.auth.getUser();
 
-    const userId = userData.user.id;
-
-    // Store each event in the database
-    for (const event of events) {
-      // Check if this is an assignment or exam
-      const isAssignment =
-        event.title.toLowerCase().includes("assignment") ||
-        event.title.toLowerCase().includes("due") ||
-        event.title.toLowerCase().includes("submit");
-
-      if (isAssignment) {
-        // Store as a task
-        await supabase.from("tasks").upsert(
-          {
-            title: event.title,
-            description: event.description || "",
-            due_date: event.start_time,
-            status: "todo",
-            priority: "medium",
-            user_id: userId,
-            source: "canvas",
-            external_id: event.uid,
-          },
-          { onConflict: "external_id" },
-        );
-      } else {
-        // Store as a calendar event (if you have a separate table for this)
-        // For now, we'll store everything as tasks
-        await supabase.from("tasks").upsert(
-          {
-            title: event.title,
-            description: event.description || "",
-            due_date: event.start_time,
-            status: "todo",
-            priority: "low",
-            user_id: userId,
-            source: "canvas",
-            external_id: event.uid,
-          },
-          { onConflict: "external_id" },
-        );
+      if (authError) {
+        console.error("Authentication error:", authError);
+        throw new Error("Authentication failed: " + authError.message);
       }
+
+      if (!userData || !userData.user) {
+        console.error("No user data found", userData);
+        throw new Error("User not authenticated");
+      }
+
+      const userId = userData.user.id;
+
+      // Store each event in the database
+      for (const event of events) {
+        // Check if this is an assignment or exam
+        const isAssignment =
+          event.title.toLowerCase().includes("assignment") ||
+          event.title.toLowerCase().includes("due") ||
+          event.title.toLowerCase().includes("submit");
+
+        if (isAssignment) {
+          // Store as a task
+          await supabase.from("tasks").upsert(
+            {
+              title: event.title,
+              description: event.description || "",
+              due_date: event.start_time,
+              status: "todo",
+              priority: "medium",
+              user_id: userId,
+              source: "canvas",
+              external_id: event.uid,
+            },
+            { onConflict: "external_id" },
+          );
+        } else {
+          // Store as a calendar event (if you have a separate table for this)
+          // For now, we'll store everything as tasks
+          await supabase.from("tasks").upsert(
+            {
+              title: event.title,
+              description: event.description || "",
+              due_date: event.start_time,
+              status: "todo",
+              priority: "low",
+              user_id: userId,
+              source: "canvas",
+              external_id: event.uid,
+            },
+            { onConflict: "external_id" },
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Authentication error in storeEvents:", error);
+      throw error;
     }
   };
 
@@ -252,7 +280,7 @@ export default function CanvasIntegration() {
       // Re-fetch the calendar feed
       await handleSubmitFeedUrl();
       setLastSynced(new Date().toLocaleString());
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error syncing with Canvas:", error);
       setError("Failed to sync with Canvas. Please try again.");
     } finally {
@@ -349,14 +377,14 @@ export default function CanvasIntegration() {
                 value={feedUrl}
                 onChange={(e) => setFeedUrl(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">
-                To find your Canvas calendar feed URL:
+              <div className="text-xs text-muted-foreground">
+                <div>To find your Canvas calendar feed URL:</div>
                 <ol className="list-decimal list-inside mt-1 ml-2">
                   <li>Go to Calendar in Canvas</li>
                   <li>Click on "Calendar Feed" at the bottom right</li>
                   <li>Copy the URL provided</li>
                 </ol>
-              </p>
+              </div>
               {error && (
                 <div className="flex items-center text-red-600 text-sm mt-2">
                   <AlertCircle className="h-4 w-4 mr-1" />

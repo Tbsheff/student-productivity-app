@@ -21,14 +21,19 @@ import { Check, RefreshCw, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase-client";
 
+type Calendar = {
+  id: string;
+  name: string;
+};
+
 export default function GoogleCalendarSync() {
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
   const [error, setError] = useState("");
   const [lastSynced, setLastSynced] = useState("Never");
-  const [calendars, setCalendars] = useState([]);
-  const [selectedCalendars, setSelectedCalendars] = useState([]);
+  const [calendars, setCalendars] = useState<Calendar[]>([]);
+  const [selectedCalendars, setSelectedCalendars] = useState<string[]>([]);
   const [authUrl, setAuthUrl] = useState("");
   const supabase = createClient();
 
@@ -52,7 +57,7 @@ export default function GoogleCalendarSync() {
           // Fetch available calendars
           fetchCalendars();
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error checking connection:", error);
       }
     };
@@ -74,7 +79,7 @@ export default function GoogleCalendarSync() {
       const { authUrl } = await response.json();
       setAuthUrl(authUrl);
       setShowDialog(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error connecting to Google Calendar:", error);
       setError(
         error.message ||
@@ -117,7 +122,7 @@ export default function GoogleCalendarSync() {
 
       // Fetch available calendars
       await fetchCalendars();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error authorizing Google Calendar:", error);
       setError(
         error.message ||
@@ -142,13 +147,13 @@ export default function GoogleCalendarSync() {
 
       setCalendars(fetchedCalendars);
       setSelectedCalendars(["primary", "school"]); // Default selected calendars
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching calendars:", error);
       setError(error.message || "Failed to fetch calendars");
     }
   };
 
-  const handleCalendarToggle = (calendarId) => {
+  const handleCalendarToggle = (calendarId: string) => {
     setSelectedCalendars((prev) => {
       if (prev.includes(calendarId)) {
         return prev.filter((id) => id !== calendarId);
@@ -176,7 +181,7 @@ export default function GoogleCalendarSync() {
       }
 
       setLastSynced(new Date().toLocaleString());
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error syncing with Google Calendar:", error);
       setError(
         error.message ||
