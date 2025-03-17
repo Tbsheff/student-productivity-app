@@ -40,17 +40,16 @@ export default async function NotesPage() {
 
   // Extract unique tags from all notes
   const allTags =
-  notes?.reduce<string[]>((tags, note) => {
-    if (note.tags && Array.isArray(note.tags)) {
-      note.tags.forEach((tag: string) => { // Explicitly type `tag`
-        if (!tags.includes(tag)) {
-          tags.push(tag);
-        }
-      });
-    }
-    return tags;
-  }, []) || [];
-
+    notes?.reduce<string[]>((tags, note) => {
+      if (note.tags && Array.isArray(note.tags)) {
+        note.tags.forEach((tag: string) => {
+          if (!tags.includes(tag)) {
+            tags.push(tag);
+          }
+        });
+      }
+      return tags;
+    }, []) || [];
 
   return (
     <DashboardShell title="Notes">
@@ -120,7 +119,7 @@ export default async function NotesPage() {
                     </div>
                     {note.tags && note.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-3">
-                        {note.tags.map((tag, index) => (
+                        {note.tags.map((tag: string, index: number) => (
                           <div
                             key={index}
                             className="px-2 py-0.5 bg-secondary text-secondary-foreground rounded-full text-xs flex items-center"
@@ -187,7 +186,7 @@ export default async function NotesPage() {
                     </div>
                     {note.tags && note.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-3">
-                        {note.tags.map((tag, index) => (
+                        {note.tags.map((tag: string, index: number) => (
                           <div
                             key={index}
                             className="px-2 py-0.5 bg-secondary text-secondary-foreground rounded-full text-xs flex items-center"
@@ -292,7 +291,7 @@ export default async function NotesPage() {
         <TabsContent value="tags" className="mt-4 space-y-4">
           {allTags.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {allTags.map((tag, index) => {
+              {allTags.map((tag: string, index: number) => {
                 const tagNotes =
                   notes?.filter(
                     (note) => note.tags && note.tags.includes(tag),

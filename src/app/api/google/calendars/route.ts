@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "../../../../../supabase/server";
 
 // This would fetch the user's Google calendars
+export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   try {
     // Get the user from the session

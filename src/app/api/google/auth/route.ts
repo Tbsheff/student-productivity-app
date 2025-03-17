@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { createClient } from "../../../../../supabase/server";
 
 // This would be a real implementation using Google OAuth
 export async function GET(request: Request) {
