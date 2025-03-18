@@ -182,8 +182,9 @@ export default function TaskDetailsDialog({
                     : task.status}
             </Badge>
             <Badge className={getPriorityColor()}>
-              {task.priority?.charAt(0).toUpperCase() +
-                task.priority?.slice(1) || "Medium"}{" "}
+              {task.priority
+                ? task.priority.charAt(0).toUpperCase() + task.priority.slice(1)
+                : "Medium"}{" "}
               Priority
             </Badge>
             {task.course && <Badge variant="outline">{task.course}</Badge>}

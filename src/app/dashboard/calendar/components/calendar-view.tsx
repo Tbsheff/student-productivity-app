@@ -22,14 +22,16 @@ interface Task {
 interface CalendarViewProps {
   tasks: Task[];
   initialDate?: Date;
+  view?: "month" | "week" | "day";
 }
 
 export default function CalendarView({
   tasks,
   initialDate = new Date(),
+  view: initialView = "month",
 }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(initialDate);
-  const [view, setView] = useState<"month" | "week" | "day">("month");
+  const [view, setView] = useState<"month" | "week" | "day">(initialView);
 
   // Get current month and year
   const currentMonth = currentDate.toLocaleString("default", { month: "long" });

@@ -37,7 +37,7 @@ export default function TaskList({ tasks, status, title }: TaskListProps) {
     const courses = tasks
       .map((task) => task.course)
       .filter((course): course is string => !!course);
-    setUniqueCourses([...new Set(courses)]);
+    setUniqueCourses(Array.from(new Set(courses)));
   }, [tasks]);
 
   // Apply filters to tasks
