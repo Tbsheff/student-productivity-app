@@ -212,64 +212,53 @@ export default function CanvasIntegration() {
 
   const storeEvents = async (events: IcsEvent[]) => {
     try {
-      const { data: userData, error: authError } =
-        await supabase.auth.getUser();
+      const supabase = createClient();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-      if (authError) {
-        console.error("Authentication error:", authError);
-        throw new Error("Authentication failed: " + authError.message);
+      if (sessionError || !session) {
+        throw new Error("Authentication failed: " + (sessionError?.message || "No active session"));
       }
 
-      if (!userData || !userData.user) {
-        console.error("No user data found", userData);
-        throw new Error("User not authenticated");
-      }
+      const userId = session.user.id;
 
-      const userId = userData.user.id;
-
-      // Store each event in the database
       for (const event of events) {
+        // Validate required fields
+        if (!event.title || !event.start_time || !event.uid) {
+          console.warn("Skipping event due to missing required fields:", event);
+          continue;
+        }
+
         // Check if this is an assignment or exam
         const isAssignment =
           event.title.toLowerCase().includes("assignment") ||
           event.title.toLowerCase().includes("due") ||
           event.title.toLowerCase().includes("submit");
 
-        if (isAssignment) {
-          // Store as a task
-          await supabase.from("tasks").upsert(
-            {
-              title: event.title,
-              description: event.description || "",
-              due_date: event.start_time,
-              status: "todo",
-              priority: "medium",
-              user_id: userId,
-              source: "canvas",
-              external_id: event.uid,
-            },
-            { onConflict: "external_id" },
-          );
-        } else {
-          // Store as a calendar event (if you have a separate table for this)
-          // For now, we'll store everything as tasks
-          await supabase.from("tasks").upsert(
-            {
-              title: event.title,
-              description: event.description || "",
-              due_date: event.start_time,
-              status: "todo",
-              priority: "low",
-              user_id: userId,
-              source: "canvas",
-              external_id: event.uid,
-            },
-            { onConflict: "external_id" },
-          );
+        const payload = {
+          title: event.title,
+          description: event.description || "",
+          due_date: event.start_time,
+          status: "todo",
+          priority: isAssignment ? "medium" : "low",
+          user_id: userId,
+          source: "canvas",
+          external_id: event.uid,
+        };
+
+        try {
+          const { error } = await supabase.from("tasks").upsert(payload, {
+            onConflict: 'external_id,user_id'
+          });
+
+          if (error) {
+            console.error("Error upserting event:", payload, error);
+          }
+        } catch (upsertError) {
+          console.error("Unexpected error during upsert:", payload, upsertError);
         }
       }
     } catch (error) {
-      console.error("Authentication error in storeEvents:", error);
+      console.error("Error in storeEvents:", error);
       throw error;
     }
   };

@@ -26,4 +26,17 @@ CREATE POLICY "Service role can manage all users"
   USING (auth.jwt() ->> 'role' = 'service_role');
 
 -- Enable realtime for users table
-alter publication supabase_realtime add table users;
+DO $$
+BEGIN
+  -- Check if the table is already in the publication
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' 
+    AND schemaname = 'public' 
+    AND tablename = 'users'
+  ) THEN
+    -- Only add it if it's not already there
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.users;
+  END IF;
+END
+$$;

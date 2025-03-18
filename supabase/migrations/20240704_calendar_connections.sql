@@ -23,25 +23,36 @@ CREATE INDEX IF NOT EXISTS tasks_external_id_idx ON tasks(external_id);
 ALTER TABLE calendar_connections ENABLE ROW LEVEL SECURITY;
 
 -- Create policies
-DROP POLICY IF EXISTS "Users can view their own calendar connections";
+DROP POLICY IF EXISTS "Users can view their own calendar connections" ON calendar_connections;
 CREATE POLICY "Users can view their own calendar connections"
   ON calendar_connections FOR SELECT
   USING (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "Users can insert their own calendar connections";
+DROP POLICY IF EXISTS "Users can insert their own calendar connections" ON calendar_connections;
 CREATE POLICY "Users can insert their own calendar connections"
   ON calendar_connections FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "Users can update their own calendar connections";
+DROP POLICY IF EXISTS "Users can update their own calendar connections" ON calendar_connections;
 CREATE POLICY "Users can update their own calendar connections"
   ON calendar_connections FOR UPDATE
   USING (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "Users can delete their own calendar connections";
+DROP POLICY IF EXISTS "Users can delete their own calendar connections" ON calendar_connections;
 CREATE POLICY "Users can delete their own calendar connections"
   ON calendar_connections FOR DELETE
   USING (auth.uid() = user_id);
 
--- Add to realtime publication
-alter publication supabase_realtime add table calendar_connections;
+-- Add to realtime publication if not already added
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' 
+    AND schemaname = 'public' 
+    AND tablename = 'calendar_connections'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE calendar_connections;
+  END IF;
+END
+$$;

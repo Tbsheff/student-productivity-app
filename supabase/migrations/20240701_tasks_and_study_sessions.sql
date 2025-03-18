@@ -208,9 +208,62 @@ CREATE POLICY "Users can delete their own notes"
   USING (auth.uid() = user_id);
 
 -- Enable realtime for all tables
-alter publication supabase_realtime add table tasks;
-alter publication supabase_realtime add table subtasks;
-alter publication supabase_realtime add table study_sessions;
-alter publication supabase_realtime add table courses;
-alter publication supabase_realtime add table goals;
-alter publication supabase_realtime add table notes;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'tasks'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE tasks;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'subtasks'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE subtasks;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'study_sessions'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE study_sessions;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'courses'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE courses;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'goals'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE goals;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'notes'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE notes;
+  END IF;
+END $$;

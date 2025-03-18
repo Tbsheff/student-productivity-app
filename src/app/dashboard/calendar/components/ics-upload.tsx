@@ -259,7 +259,9 @@ export default function IcsUpload() {
             source: "ics_import",
             external_id: event.uid,
           },
-          { onConflict: "external_id" },
+          {
+            onConflict: 'external_id,user_id'
+          }
         );
       }
     }
