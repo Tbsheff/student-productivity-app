@@ -108,27 +108,34 @@ export default function NoteEditor({
               onChange={(e) => setTitle(e.target.value)}
             />
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="course">Course (Optional)</Label>
-            <Select value={courseId} onValueChange={setCourseId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a course" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">None</SelectItem>
-                {courses.map((course) => (
-                  <SelectItem key={course.id} value={course.id}>
-                    <div className="flex items-center">
-                      <div
-                        className="w-3 h-3 rounded-full mr-2"
-                        style={{ backgroundColor: course.color || "#6366F1" }}
-                      />
-                      {course.name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <Label htmlFor="course">Course</Label>
+              <Select
+                value={courseId}
+                onValueChange={(value) => setCourseId(value === "none" ? "" : value)}
+              >
+                <SelectTrigger id="course">
+                  <SelectValue placeholder="Select a course" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {courses.map((course) => (
+                    <SelectItem key={course.id} value={course.id}>
+                      <div className="flex items-center">
+                        {course.color && (
+                          <div
+                            className="w-3 h-3 rounded-full mr-2"
+                            style={{ backgroundColor: course.color }}
+                          />
+                        )}
+                        <span>{course.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="content">Content</Label>

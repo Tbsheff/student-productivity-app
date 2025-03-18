@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import CalendarDay from "./calendar-day";
+import React from "react";
 
 interface Task {
   id: string;
@@ -312,7 +313,7 @@ export default function CalendarView({
             className={`grid grid-cols-7 ${view === "day" ? "grid-rows-1 h-[600px]" : view === "week" ? "grid-rows-1 h-[600px]" : "grid-rows-6 h-[600px]"}`}
           >
             {days.map((week, weekIndex) => (
-              <>
+              <React.Fragment key={`week-${weekIndex}`}>
                 {week.map((day, dayIndex) => (
                   <CalendarDay
                     key={`${weekIndex}-${dayIndex}`}
@@ -322,7 +323,7 @@ export default function CalendarView({
                     tasks={getTasksForDay(day.date)}
                   />
                 ))}
-              </>
+              </React.Fragment>
             ))}
           </div>
         </CardContent>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import TaskCard from "./task-card";
 import TaskFilter from "./task-filter";
 import { Button } from "@/components/ui/button";
@@ -38,10 +38,13 @@ export default function TaskList({ tasks, status, title }: TaskListProps) {
       .map((task) => task.course)
       .filter((course): course is string => !!course);
     setUniqueCourses(Array.from(new Set(courses)));
+    
+    // Reset filtered tasks when tasks change
+    setFilteredTasks(tasks);
   }, [tasks]);
 
-  // Apply filters to tasks
-  const handleFilterChange = (filters: {
+  // Apply filters to tasks - using useCallback to prevent recreation on every render
+  const handleFilterChange = useCallback((filters: {
     search: string;
     priority: string[];
     course: string[];
@@ -49,7 +52,7 @@ export default function TaskList({ tasks, status, title }: TaskListProps) {
     sortDirection: "asc" | "desc";
   }) => {
     let filtered = [...tasks];
-
+    
     // Apply search filter
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
@@ -60,26 +63,26 @@ export default function TaskList({ tasks, status, title }: TaskListProps) {
           (task.course?.toLowerCase().includes(searchLower) ?? false),
       );
     }
-
+    
     // Apply priority filter
     if (filters.priority.length > 0) {
       filtered = filtered.filter(
         (task) => task.priority && filters.priority.includes(task.priority),
       );
     }
-
+    
     // Apply course filter
     if (filters.course.length > 0) {
       filtered = filtered.filter(
         (task) => task.course && filters.course.includes(task.course),
       );
     }
-
+    
     // Apply sorting
     filtered.sort((a, b) => {
       let valueA: any;
       let valueB: any;
-
+      
       switch (filters.sortBy) {
         case "due_date":
           valueA = a.due_date ? new Date(a.due_date).getTime() : Infinity;
@@ -106,7 +109,7 @@ export default function TaskList({ tasks, status, title }: TaskListProps) {
           valueA = a.due_date ? new Date(a.due_date).getTime() : Infinity;
           valueB = b.due_date ? new Date(b.due_date).getTime() : Infinity;
       }
-
+      
       // Apply sort direction
       return filters.sortDirection === "asc"
         ? valueA > valueB
@@ -116,9 +119,9 @@ export default function TaskList({ tasks, status, title }: TaskListProps) {
           ? 1
           : -1;
     });
-
+    
     setFilteredTasks(filtered);
-  };
+  }, [tasks]);  // Only recreate this function when tasks change
 
   return (
     <div className="space-y-4">
@@ -134,9 +137,9 @@ export default function TaskList({ tasks, status, title }: TaskListProps) {
           <Plus className="mr-2 h-4 w-4" /> Add Task
         </Button>
       </div>
-
+      
       <TaskFilter onFilterChange={handleFilterChange} courses={uniqueCourses} />
-
+      
       <div className="space-y-4">
         {filteredTasks.length > 0 ? (
           filteredTasks.map((task) => <TaskCard key={task.id} task={task} />)
@@ -156,7 +159,7 @@ export default function TaskList({ tasks, status, title }: TaskListProps) {
           </Card>
         )}
       </div>
-
+      
       <TaskForm
         open={isAddTaskDialogOpen}
         onOpenChange={setIsAddTaskDialogOpen}

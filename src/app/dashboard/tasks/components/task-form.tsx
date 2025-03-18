@@ -76,18 +76,34 @@ export default function TaskForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [courses, setCourses] = useState<Course[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Fetch courses when the dialog opens
   useEffect(() => {
-    const fetchCourses = async () => {
-      const supabase = createClient();
-      const { data } = await supabase.from("courses").select("*");
-      if (data) {
-        setCourses(data);
-      }
-    };
-
-    fetchCourses();
-  }, []);
+    if (open) {
+      const fetchCourses = async () => {
+        try {
+          setIsLoading(true);
+          const supabase = createClient();
+          const { data, error } = await supabase.from("courses").select("*");
+          
+          if (error) {
+            throw error;
+          }
+          
+          if (data) {
+            setCourses(data);
+          }
+        } catch (err) {
+          console.error("Error fetching courses:", err);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      
+      fetchCourses();
+    }
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,7 +135,7 @@ export default function TaskForm({
       const taskData = {
         title,
         description,
-        course,
+        course: course || null, // Ensure null if empty string
         due_date: dueDateISO,
         priority,
         status,
@@ -164,135 +180,157 @@ export default function TaskForm({
     }
   };
 
+  // Check if the course ID exists in the courses array
+  const courseExists = course ? courses.some(c => c.id === course) : true;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{taskId ? "Edit Task" : "Add New Task"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Task Title *</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter task title"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Description (Optional)</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter task description"
-              rows={3}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+        {isLoading ? (
+          <div className="py-4 text-center">Loading...</div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="course">Course (Optional)</Label>
+              <Label htmlFor="title">Task Title *</Label>
               <Input
-                id="course"
-                value={course}
-                onChange={(e) => setCourse(e.target.value)}
-                placeholder="Enter course name"
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Enter task title"
+                required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="priority">Priority</Label>
-              <Select value={priority} onValueChange={setPriority}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="due-date">Due Date (Optional)</Label>
-              <Input
-                id="due-date"
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
+              <Label htmlFor="description">Description (Optional)</Label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Enter task description"
+                rows={3}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="due-time">Due Time (Optional)</Label>
-              <Input
-                id="due-time"
-                type="time"
-                value={dueTime}
-                onChange={(e) => setDueTime(e.target.value)}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="course">Course (Optional)</Label>
+                <Select 
+                  value={courseExists ? course : "none"} 
+                  onValueChange={(val) => setCourse(val === "none" ? "" : val)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select course" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {courses.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {course && !courseExists && !isLoading && (
+                  <p className="text-xs text-amber-500 mt-1">
+                    The previously selected course no longer exists
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="priority">Priority</Label>
+                <Select value={priority} onValueChange={setPriority}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todo">To Do</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="due-date">Due Date (Optional)</Label>
+                <Input
+                  id="due-date"
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="due-time">Due Time (Optional)</Label>
+                <Input
+                  id="due-time"
+                  type="time"
+                  value={dueTime}
+                  onChange={(e) => setDueTime(e.target.value)}
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="estimated-minutes">
-                Estimated Time (minutes, Optional)
-              </Label>
-              <Input
-                id="estimated-minutes"
-                type="number"
-                min="0"
-                value={estimatedMinutes}
-                onChange={(e) => setEstimatedMinutes(e.target.value)}
-                placeholder="e.g., 30"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todo">To Do</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="estimated-minutes">
+                  Estimated Time (minutes, Optional)
+                </Label>
+                <Input
+                  id="estimated-minutes"
+                  type="number"
+                  min="0"
+                  value={estimatedMinutes}
+                  onChange={(e) => setEstimatedMinutes(e.target.value)}
+                  placeholder="e.g., 30"
+                />
+              </div>
             </div>
-          </div>
 
-          {error && (
-            <div className="text-sm font-medium text-red-500">{error}</div>
-          )}
+            {error && (
+              <div className="text-sm font-medium text-red-500">{error}</div>
+            )}
 
-          <DialogFooter className="pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="bg-indigo-600 hover:bg-indigo-700"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Saving..." : taskId ? "Update Task" : "Add Task"}
-            </Button>
-          </DialogFooter>
-        </form>
+            <DialogFooter className="pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="bg-indigo-600 hover:bg-indigo-700"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Saving..." : taskId ? "Update Task" : "Add Task"}
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );

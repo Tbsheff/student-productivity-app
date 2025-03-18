@@ -36,6 +36,7 @@ export default function TaskFilter({
 
   // Apply filters when any filter changes
   useEffect(() => {
+    // Remove onFilterChange from the dependency array to prevent infinite loops
     onFilterChange({
       search,
       priority: selectedPriorities,
@@ -49,7 +50,7 @@ export default function TaskFilter({
     selectedCourses,
     sortBy,
     sortDirection,
-    onFilterChange,
+    // onFilterChange - removed to prevent infinite loop
   ]);
 
   // Toggle priority selection
