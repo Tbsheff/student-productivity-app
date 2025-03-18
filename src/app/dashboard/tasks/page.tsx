@@ -1,18 +1,15 @@
 import DashboardShell from "@/components/dashboard/dashboard-shell";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient } from "../../../../supabase/server";
+import TaskList from "./components/task-list";
+import { Suspense } from "react";
 
-export default async function TasksPage() {
+export default async function TasksPage({
+  searchParams,
+}: {
+  searchParams: { edit?: string };
+}) {
   const supabase = await createClient();
 
   const {
@@ -39,16 +36,11 @@ export default async function TasksPage() {
 
   return (
     <DashboardShell title="Task Management">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Tasks</h2>
-          <p className="text-muted-foreground">
-            Manage your assignments, projects, and to-dos
-          </p>
-        </div>
-        <Button className="bg-indigo-600 hover:bg-indigo-700">
-          <Plus className="mr-2 h-4 w-4" /> Add Task
-        </Button>
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">Tasks</h2>
+        <p className="text-muted-foreground">
+          Manage your assignments, projects, and to-dos
+        </p>
       </div>
 
       <Tabs defaultValue="todo" className="mt-6">
@@ -62,133 +54,30 @@ export default async function TasksPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="todo" className="space-y-4">
-          {todoTasks.length > 0 ? (
-            todoTasks.map((task) => (
-              <Card key={task.id}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle>{task.title}</CardTitle>
-                      <CardDescription>
-                        {task.course || "No course"} · {task.priority} priority
-                      </CardDescription>
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {task.due_date
-                        ? new Date(task.due_date).toLocaleDateString()
-                        : "No due date"}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm">
-                    {task.description || "No description"}
-                  </p>
-                  <div className="mt-4 flex items-center gap-2">
-                    <Button variant="outline" size="sm">
-                      Edit
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      Start
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-10">
-                <p className="text-center text-muted-foreground">
-                  No tasks to do. Add a new task to get started.
-                </p>
-                <Button className="mt-4 bg-indigo-600 hover:bg-indigo-700">
-                  <Plus className="mr-2 h-4 w-4" /> Add Task
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+        <TabsContent value="todo">
+          <Suspense fallback={<div>Loading...</div>}>
+            <TaskList tasks={todoTasks} status="todo" title="To Do" />
+          </Suspense>
         </TabsContent>
 
-        <TabsContent value="in-progress" className="space-y-4">
-          {inProgressTasks.length > 0 ? (
-            inProgressTasks.map((task) => (
-              <Card key={task.id}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle>{task.title}</CardTitle>
-                      <CardDescription>
-                        {task.course || "No course"} · {task.priority} priority
-                      </CardDescription>
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {task.due_date
-                        ? new Date(task.due_date).toLocaleDateString()
-                        : "No due date"}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm">
-                    {task.description || "No description"}
-                  </p>
-                  <div className="mt-4 flex items-center gap-2">
-                    <Button variant="outline" size="sm">
-                      Edit
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      Complete
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-10">
-                <p className="text-center text-muted-foreground">
-                  No tasks in progress.
-                </p>
-              </CardContent>
-            </Card>
-          )}
+        <TabsContent value="in-progress">
+          <Suspense fallback={<div>Loading...</div>}>
+            <TaskList
+              tasks={inProgressTasks}
+              status="in_progress"
+              title="In Progress"
+            />
+          </Suspense>
         </TabsContent>
 
-        <TabsContent value="completed" className="space-y-4">
-          {completedTasks.length > 0 ? (
-            completedTasks.map((task) => (
-              <Card key={task.id}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle>{task.title}</CardTitle>
-                      <CardDescription>
-                        {task.course || "No course"} · {task.priority} priority
-                      </CardDescription>
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Completed on{" "}
-                      {new Date(task.updated_at).toLocaleDateString()}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm">
-                    {task.description || "No description"}
-                  </p>
-                </CardContent>
-              </Card>
-            ))
-          ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-10">
-                <p className="text-center text-muted-foreground">
-                  No completed tasks yet.
-                </p>
-              </CardContent>
-            </Card>
-          )}
+        <TabsContent value="completed">
+          <Suspense fallback={<div>Loading...</div>}>
+            <TaskList
+              tasks={completedTasks}
+              status="completed"
+              title="Completed"
+            />
+          </Suspense>
         </TabsContent>
       </Tabs>
     </DashboardShell>
