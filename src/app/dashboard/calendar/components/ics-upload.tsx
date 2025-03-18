@@ -241,7 +241,9 @@ export default function IcsUpload() {
             source: "ics_import",
             external_id: event.uid,
           },
-          { onConflict: "external_id" },
+          {
+            onConflict: 'external_id,user_id'
+          }
         );
       } else {
         // Store as a calendar event (if you have a separate table for this)
