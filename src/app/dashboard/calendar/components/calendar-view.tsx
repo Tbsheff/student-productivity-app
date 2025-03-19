@@ -253,35 +253,6 @@ export default function CalendarView({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button
-            variant={view === "month" ? "default" : "outline"}
-            onClick={() => setView("month")}
-            className={
-              view === "month" ? "bg-indigo-600 hover:bg-indigo-700" : ""
-            }
-          >
-            Month
-          </Button>
-          <Button
-            variant={view === "week" ? "default" : "outline"}
-            onClick={() => setView("week")}
-            className={
-              view === "week" ? "bg-indigo-600 hover:bg-indigo-700" : ""
-            }
-          >
-            Week
-          </Button>
-          <Button
-            variant={view === "day" ? "default" : "outline"}
-            onClick={() => setView("day")}
-            className={
-              view === "day" ? "bg-indigo-600 hover:bg-indigo-700" : ""
-            }
-          >
-            Day
-          </Button>
-        </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1">
             <Button variant="outline" size="icon" onClick={navigatePrevious}>

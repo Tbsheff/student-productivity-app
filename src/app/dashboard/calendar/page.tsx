@@ -9,6 +9,11 @@ import CalendarView from "./components/calendar-view";
 import AgendaView from "./components/agenda-view";
 
 // Dynamically import components with client-side rendering
+const CourseCalendarView = dynamic(
+  () => import("./components/course-calendar-view"),
+  { ssr: false },
+);
+
 const CanvasIntegration = dynamic(
   () => import("../calendar/components/canvas-integration"),
   { ssr: false },
@@ -54,6 +59,14 @@ export default async function CalendarPage() {
       </div>
 
       <Tabs defaultValue="month" className="mt-6">
+        <TabsList className="mb-4">
+          <TabsTrigger value="month">Month</TabsTrigger>
+          <TabsTrigger value="week">Week</TabsTrigger>
+          <TabsTrigger value="day">Day</TabsTrigger>
+          <TabsTrigger value="list">List</TabsTrigger>
+          <TabsTrigger value="agenda">Agenda</TabsTrigger>
+        </TabsList>
+
         <TabsContent value="month" className="space-y-4">
           <CalendarView tasks={tasks || []} />
         </TabsContent>
@@ -64,6 +77,10 @@ export default async function CalendarPage() {
 
         <TabsContent value="day" className="space-y-4">
           <CalendarView tasks={tasks || []} view="day" />
+        </TabsContent>
+
+        <TabsContent value="list" className="space-y-4">
+          <CourseCalendarView tasks={tasks || []} />
         </TabsContent>
 
         <TabsContent value="agenda" className="space-y-4">

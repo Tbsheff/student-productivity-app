@@ -26,7 +26,11 @@ import {
   Trash,
   CheckCircle,
   ArrowRight,
+  BookOpen,
+  FileText,
+  GraduationCap,
 } from "lucide-react";
+import TaskTypeBadge from "./task-type-badge";
 import TaskForm from "./task-form";
 import TaskDetailsDialog from "./task-details-dialog";
 import {
@@ -188,10 +192,49 @@ export default function TaskCard({ task }: TaskCardProps) {
             >
               <CardTitle className="line-clamp-1">{task.title}</CardTitle>
               <CardDescription>
-                {task.course || "No course"} ·{" "}
-                <span className={getPriorityColor()}>
-                  {task.priority || "medium"} priority
-                </span>
+                <div className="flex flex-wrap gap-1 items-center">
+                  <span>{task.course || "No course"}</span>
+                  <span className="mx-1">·</span>
+                  <span className={getPriorityColor()}>
+                    {task.priority || "medium"} priority
+                  </span>
+                  <span className="mx-1">·</span>
+                  {(() => {
+                    const title = task.title?.toLowerCase() || "";
+                    let type: "assignment" | "exam" | "announcement" =
+                      "announcement";
+                    let icon = (
+                      <BookOpen className="h-3 w-3 mr-1 text-green-600" />
+                    );
+
+                    if (
+                      title.includes("exam") ||
+                      title.includes("test") ||
+                      title.includes("quiz")
+                    ) {
+                      type = "exam";
+                      icon = (
+                        <GraduationCap className="h-3 w-3 mr-1 text-red-600" />
+                      );
+                    } else if (
+                      title.includes("assignment") ||
+                      title.includes("project") ||
+                      task.priority === "high"
+                    ) {
+                      type = "assignment";
+                      icon = (
+                        <FileText className="h-3 w-3 mr-1 text-indigo-600" />
+                      );
+                    }
+
+                    return (
+                      <span className="flex items-center">
+                        {icon}
+                        <span className="capitalize">{type}</span>
+                      </span>
+                    );
+                  })()}
+                </div>
               </CardDescription>
             </div>
             <div className="flex items-center">

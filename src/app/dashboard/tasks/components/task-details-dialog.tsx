@@ -16,7 +16,11 @@ import {
   Trash,
   CheckCircle,
   ArrowRight,
+  BookOpen,
+  FileText,
+  GraduationCap,
 } from "lucide-react";
+import TaskTypeBadge from "./task-type-badge";
 
 interface TaskDetailsDialogProps {
   open: boolean;
@@ -170,7 +174,7 @@ export default function TaskDetailsDialog({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Status and Priority */}
+          {/* Status, Priority, and Type */}
           <div className="flex flex-wrap gap-2">
             <Badge className={getStatusColor()}>
               {task.status === "todo"
@@ -188,6 +192,28 @@ export default function TaskDetailsDialog({
               Priority
             </Badge>
             {task.course && <Badge variant="outline">{task.course}</Badge>}
+
+            {/* Task Type Badge */}
+            {(() => {
+              const title = task.title?.toLowerCase() || "";
+              let type: "assignment" | "exam" | "announcement" = "announcement";
+
+              if (
+                title.includes("exam") ||
+                title.includes("test") ||
+                title.includes("quiz")
+              ) {
+                type = "exam";
+              } else if (
+                title.includes("assignment") ||
+                title.includes("project") ||
+                task.priority === "high"
+              ) {
+                type = "assignment";
+              }
+
+              return <TaskTypeBadge type={type} />;
+            })()}
           </div>
 
           {/* Description */}
