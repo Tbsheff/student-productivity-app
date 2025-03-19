@@ -23,6 +23,7 @@ import { DynamicBlocknoteEditor } from "./dynamic-editor";
 import { createClient } from "@/utils/supabase-client";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/use-toast";
+import { error } from "console";
 
 interface Course {
   id: string;
@@ -239,7 +240,7 @@ export default function NoteEditor({
             </div>
           </div>
           {error && (
-            <div className="text-sm font-medium text-red-500">{error}</div>
+            <div className="text-sm font-medium text-red-500">{error.toString()}</div>
           )}
           <Button
             className="w-full bg-indigo-600 hover:bg-indigo-700 mt-2"
@@ -251,7 +252,5 @@ export default function NoteEditor({
         </div>
       </DialogContent>
     </Dialog>
-      </DialogContent >
-    </Dialog >
   );
 }
