@@ -110,10 +110,10 @@ export default function NotesPageClient({
   };
 
   // If in edit mode, show the note editor
-  if (editNoteId && editingNote) {
+  if (editingNote) {
     return (
       <NotePageEditor
-        noteId={editNoteId}
+        noteId={editingNote.id}
         courses={courses}
         folders={folders}
         userId={userId}
@@ -124,7 +124,6 @@ export default function NotesPageClient({
           folder_id: editingNote.folder_id,
           tags: editingNote.tags,
         }}
-        onBack={handleBackFromEdit}
       />
     );
   }

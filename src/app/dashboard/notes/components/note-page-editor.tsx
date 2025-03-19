@@ -40,7 +40,6 @@ interface NotePageEditorProps {
     folder_id?: string | null;
     tags?: string[] | null;
   };
-  onBack: () => void;
 }
 
 export default function NotePageEditor({
@@ -49,7 +48,6 @@ export default function NotePageEditor({
   folders,
   userId,
   initialData = {},
-  onBack,
 }: NotePageEditorProps) {
   const router = useRouter();
   const [title, setTitle] = useState(initialData.title || "");
@@ -112,6 +110,10 @@ export default function NotePageEditor({
   const handleEditorContentChange = useCallback((contentJson: string) => {
     setContent(contentJson);
   }, []);
+
+  const handleBack = () => {
+    router.push("/dashboard/notes");
+  };
 
   const handleSave = async (isAutoSave = false) => {
     if (!title.trim()) {
@@ -182,7 +184,7 @@ export default function NotePageEditor({
       if (!isAutoSave) {
         // Only refresh and navigate back on manual save
         router.refresh();
-        onBack();
+        handleBack();
       }
     } catch (error) {
       console.error("Error saving note:", error);
@@ -202,7 +204,7 @@ export default function NotePageEditor({
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between p-4 border-b">
         <div className="flex items-center">
-          <Button variant="ghost" size="icon" onClick={onBack} className="mr-2">
+          <Button variant="ghost" size="icon" onClick={handleBack} className="mr-2">
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Input

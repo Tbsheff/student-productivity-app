@@ -63,7 +63,6 @@ export default async function EditNotePage({
           folder_id: note.folder_id,
           tags: note.tags,
         }}
-        onBack={() => redirect("/dashboard/notes")}
       />
     </DashboardShell>
   );

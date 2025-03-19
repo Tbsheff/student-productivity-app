@@ -26,10 +26,6 @@ export default function NotePageEditorWrapper({
 }: NotePageEditorWrapperProps) {
   const router = useRouter();
 
-  const handleBackFromEdit = () => {
-    router.push("/dashboard/notes");
-  };
-
   return (
     <NotePageEditor
       noteId={noteId}
@@ -37,7 +33,6 @@ export default function NotePageEditorWrapper({
       folders={folders}
       userId={userId}
       initialData={initialData}
-      onBack={handleBackFromEdit}
     />
   );
 }

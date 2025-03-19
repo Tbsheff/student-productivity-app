@@ -49,7 +49,6 @@ export default async function NewNotePage({
         folders={folders || []}
         userId={user.id}
         initialData={initialData}
-        onBack={() => redirect("/dashboard/notes")}
       />
     </DashboardShell>
   );
