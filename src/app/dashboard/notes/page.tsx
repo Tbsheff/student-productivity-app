@@ -12,6 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookOpen, FileText, Plus, Search, Tag } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient } from "../../../../supabase/server";
+import ClientNoteButton from "./components/client-note-button";
+import ClientNoteCard from "./components/client-note-card";
+import ClientCourseNoteItem from "./components/client-course-note-item";
 
 export default async function NotesPage() {
   const supabase = await createClient();
@@ -60,9 +63,7 @@ export default async function NotesPage() {
             Organize your study notes and materials
           </p>
         </div>
-        <Button className="bg-indigo-600 hover:bg-indigo-700">
-          <Plus className="mr-2 h-4 w-4" /> New Note
-        </Button>
+        <ClientNoteButton courses={courses || []} userId={user.id} />
       </div>
 
       <div className="mt-6 flex items-center space-x-2">
@@ -86,52 +87,11 @@ export default async function NotesPage() {
           {notes && notes.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {notes.map((note) => (
-                <Card key={note.id} className="overflow-hidden">
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="line-clamp-1">
-                          {note.title}
-                        </CardTitle>
-                        {note.courses && (
-                          <CardDescription>
-                            <div className="flex items-center mt-1">
-                              <div
-                                className="w-3 h-3 rounded-full mr-2"
-                                style={{
-                                  backgroundColor:
-                                    note.courses.color || "#6366F1",
-                                }}
-                              />
-                              {note.courses.name}
-                            </div>
-                          </CardDescription>
-                        )}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(note.updated_at).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="line-clamp-3 text-sm text-muted-foreground">
-                      {note.content || "No content"}
-                    </div>
-                    {note.tags && note.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-3">
-                        {note.tags.map((tag: string, index: number) => (
-                          <div
-                            key={index}
-                            className="px-2 py-0.5 bg-secondary text-secondary-foreground rounded-full text-xs flex items-center"
-                          >
-                            <Tag className="h-3 w-3 mr-1" />
-                            {tag}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                <ClientNoteCard
+                  key={note.id}
+                  note={note}
+                  courses={courses || []}
+                />
               ))}
             </div>
           ) : (
@@ -141,9 +101,7 @@ export default async function NotesPage() {
                 <p className="text-center text-muted-foreground mb-2">
                   No notes yet. Create your first note to get started.
                 </p>
-                <Button className="mt-2 bg-indigo-600 hover:bg-indigo-700">
-                  <Plus className="mr-2 h-4 w-4" /> New Note
-                </Button>
+                <ClientNoteButton courses={courses || []} userId={user.id} />
               </CardContent>
             </Card>
           )}
@@ -153,52 +111,11 @@ export default async function NotesPage() {
           {notes && notes.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {notes.slice(0, 6).map((note) => (
-                <Card key={note.id} className="overflow-hidden">
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="line-clamp-1">
-                          {note.title}
-                        </CardTitle>
-                        {note.courses && (
-                          <CardDescription>
-                            <div className="flex items-center mt-1">
-                              <div
-                                className="w-3 h-3 rounded-full mr-2"
-                                style={{
-                                  backgroundColor:
-                                    note.courses.color || "#6366F1",
-                                }}
-                              />
-                              {note.courses.name}
-                            </div>
-                          </CardDescription>
-                        )}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(note.updated_at).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="line-clamp-3 text-sm text-muted-foreground">
-                      {note.content || "No content"}
-                    </div>
-                    {note.tags && note.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-3">
-                        {note.tags.map((tag: string, index: number) => (
-                          <div
-                            key={index}
-                            className="px-2 py-0.5 bg-secondary text-secondary-foreground rounded-full text-xs flex items-center"
-                          >
-                            <Tag className="h-3 w-3 mr-1" />
-                            {tag}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                <ClientNoteCard
+                  key={note.id}
+                  note={note}
+                  courses={courses || []}
+                />
               ))}
             </div>
           ) : (
@@ -237,36 +154,25 @@ export default async function NotesPage() {
                       {courseNotes.length > 0 ? (
                         <div className="space-y-2">
                           {courseNotes.slice(0, 3).map((note) => (
-                            <div
+                            <ClientCourseNoteItem
                               key={note.id}
-                              className="p-2 rounded-md border hover:bg-accent cursor-pointer"
-                            >
-                              <div className="font-medium line-clamp-1">
-                                {note.title}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {new Date(note.updated_at).toLocaleDateString()}
-                              </div>
-                            </div>
+                              note={note}
+                              courses={courses || []}
+                            />
                           ))}
                           {courseNotes.length > 3 && (
                             <Button
                               variant="link"
-                              className="w-full text-indigo-600 hover:text-indigo-700 p-0 h-auto"
+                              className="p-0 h-auto text-indigo-600 w-full text-center"
                             >
                               View all {courseNotes.length} notes
                             </Button>
                           )}
                         </div>
                       ) : (
-                        <div className="text-center py-4">
-                          <p className="text-sm text-muted-foreground mb-2">
-                            No notes for this course yet
-                          </p>
-                          <Button variant="outline" size="sm">
-                            <Plus className="mr-2 h-3 w-3" /> Add Note
-                          </Button>
-                        </div>
+                        <p className="text-center text-muted-foreground">
+                          No notes for this course yet
+                        </p>
                       )}
                     </CardContent>
                   </Card>
@@ -280,8 +186,11 @@ export default async function NotesPage() {
                 <p className="text-center text-muted-foreground mb-2">
                   No courses found. Add a course to organize your notes.
                 </p>
-                <Button className="mt-2 bg-indigo-600 hover:bg-indigo-700">
-                  <Plus className="mr-2 h-4 w-4" /> Add Course
+                <Button
+                  variant="outline"
+                  className="mt-2"
+                >
+                  Add a Course
                 </Button>
               </CardContent>
             </Card>
@@ -290,18 +199,18 @@ export default async function NotesPage() {
 
         <TabsContent value="tags" className="mt-4 space-y-4">
           {allTags.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {allTags.map((tag: string, index: number) => {
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {allTags.map((tagName) => {
                 const tagNotes =
                   notes?.filter(
-                    (note) => note.tags && note.tags.includes(tag),
+                    (note) => note.tags && note.tags.includes(tagName)
                   ) || [];
                 return (
-                  <Card key={index}>
+                  <Card key={tagName}>
                     <CardHeader>
                       <div className="flex items-center gap-2">
                         <Tag className="h-4 w-4" />
-                        <CardTitle>{tag}</CardTitle>
+                        <CardTitle>{tagName}</CardTitle>
                       </div>
                       <CardDescription>
                         {tagNotes.length} note{tagNotes.length !== 1 ? "s" : ""}
@@ -311,22 +220,16 @@ export default async function NotesPage() {
                       {tagNotes.length > 0 && (
                         <div className="space-y-2">
                           {tagNotes.slice(0, 3).map((note) => (
-                            <div
+                            <ClientCourseNoteItem
                               key={note.id}
-                              className="p-2 rounded-md border hover:bg-accent cursor-pointer"
-                            >
-                              <div className="font-medium line-clamp-1">
-                                {note.title}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {new Date(note.updated_at).toLocaleDateString()}
-                              </div>
-                            </div>
+                              note={note}
+                              courses={courses || []}
+                            />
                           ))}
                           {tagNotes.length > 3 && (
                             <Button
                               variant="link"
-                              className="w-full text-indigo-600 hover:text-indigo-700 p-0 h-auto"
+                              className="p-0 h-auto text-indigo-600 w-full text-center"
                             >
                               View all {tagNotes.length} notes
                             </Button>

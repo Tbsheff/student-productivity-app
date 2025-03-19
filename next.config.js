@@ -3,7 +3,8 @@
 const nextConfig = {
     images: {
         domains: ['images.unsplash.com'],
-    }
+    },
+    reactStrictMode: false, // Disable strict mode for BlockNote compatibility
 };
 
 if (process.env.NEXT_PUBLIC_TEMPO) {

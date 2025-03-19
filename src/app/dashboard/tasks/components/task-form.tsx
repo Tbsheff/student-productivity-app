@@ -185,7 +185,10 @@ export default function TaskForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent 
+        className="sm:max-w-[500px]" 
+        aria-describedby="task-form-description"
+      >
         <DialogHeader>
           <DialogTitle>{taskId ? "Edit Task" : "Add New Task"}</DialogTitle>
         </DialogHeader>
@@ -193,6 +196,10 @@ export default function TaskForm({
           <div className="py-4 text-center">Loading...</div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4 py-4">
+            <div id="task-form-description" className="sr-only">
+              {taskId ? "Edit your task details" : "Create a new task"}
+            </div>
+            
             <div className="space-y-2">
               <Label htmlFor="title">Task Title *</Label>
               <Input

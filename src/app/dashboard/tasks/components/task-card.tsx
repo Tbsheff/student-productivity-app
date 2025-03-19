@@ -192,10 +192,10 @@ export default function TaskCard({ task }: TaskCardProps) {
             >
               <CardTitle className="line-clamp-1">{task.title}</CardTitle>
               <CardDescription>
-                <div className="flex flex-wrap gap-1 items-center">
+                <span className="flex flex-wrap gap-1 items-center">
                   {task.course ? (
-                    <div className="flex items-center">
-                      <div
+                    <span className="flex items-center">
+                      <span
                         className="w-2 h-2 rounded-full mr-1"
                         style={{
                           backgroundColor: (() => {
@@ -227,7 +227,7 @@ export default function TaskCard({ task }: TaskCardProps) {
                       <span className="text-xs px-1.5 py-0.5 rounded-full bg-secondary">
                         {task.course}
                       </span>
-                    </div>
+                    </span>
                   ) : (
                     <span className="text-xs">No course</span>
                   )}
@@ -271,7 +271,7 @@ export default function TaskCard({ task }: TaskCardProps) {
                       </span>
                     );
                   })()}
-                </div>
+                </span>
               </CardDescription>
             </div>
             <div className="flex items-center">

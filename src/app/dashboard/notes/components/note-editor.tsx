@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,9 +17,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Plus, Tag, X } from "lucide-react";
 import { useState } from "react";
+import { DynamicBlocknoteEditor } from "./dynamic-editor";
+import { createClient } from "@/utils/supabase-client";
+import { useRouter } from "next/navigation";
+import { toast } from "@/components/ui/use-toast";
 
 interface Course {
   id: string;
@@ -31,18 +34,34 @@ interface NoteEditorProps {
   courses: Course[];
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  userId: string; // Add userId for saving to the database
 }
 
 export default function NoteEditor({
   courses,
   open,
   onOpenChange,
+  userId,
 }: NoteEditorProps) {
+  const router = useRouter();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [courseId, setCourseId] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  // For uncontrolled dialog mode
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  // Use either the controlled state or internal state
+  const isOpen = open !== undefined ? open : internalOpen;
+  const handleOpenChange = (newOpen: boolean) => {
+    if (onOpenChange) {
+      onOpenChange(newOpen);
+    } else {
+      setInternalOpen(newOpen);
+    }
+  };
 
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -62,43 +81,75 @@ export default function NoteEditor({
     }
   };
 
-  const handleSave = () => {
-    // Save note logic would go here
-    console.log({ title, content, courseId, tags });
-    // Reset form
-    setTitle("");
-    setContent("");
-    setCourseId("");
-    setTags([]);
-    // Close dialog
-    if (onOpenChange) onOpenChange(false);
+  // Handle content change from the BlockNote editor
+  const handleEditorContentChange = useCallback((contentJson: string) => {
+    setContent(contentJson);
+  }, []);
+
+  const handleSave = async () => {
+    if (!title.trim()) {
+      toast({
+        title: "Title is required",
+        description: "Please enter a title for your note",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const supabase = createClient();
+
+      // Create the note
+      const { data, error } = await supabase.from("notes").insert({
+        title,
+        content,
+        course_id: courseId || null,
+        tags: tags.length > 0 ? tags : null,
+        user_id: userId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }).select();
+
+      if (error) throw error;
+
+      // Reset form
+      setTitle("");
+      setContent("");
+      setCourseId("");
+      setTags([]);
+
+      // Close dialog
+      handleOpenChange(false);
+
+      // Show success toast
+      toast({
+        title: "Note created",
+        description: "Your note has been created successfully",
+      });
+
+      // Refresh the page to show the new note
+      router.refresh();
+
+    } catch (error) {
+      console.error("Error saving note:", error);
+      toast({
+        title: "Error",
+        description: "There was an error saving your note",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const DialogComponent = open !== undefined ? React.Fragment : Dialog;
-  const DialogContentComponent =
-    open !== undefined ? React.Fragment : DialogContent;
-  const dialogProps = open !== undefined ? {} : {};
-  const dialogContentProps =
-    open !== undefined
-      ? {}
-      : {
-          className: "sm:max-w-[600px]",
-        };
-
   return (
-    <DialogComponent {...dialogProps}>
-      {open === undefined && (
-        <DialogTrigger asChild>
-          <Button className="bg-indigo-600 hover:bg-indigo-700">
-            <Plus className="mr-2 h-4 w-4" /> New Note
-          </Button>
-        </DialogTrigger>
-      )}
-      <DialogContentComponent {...dialogContentProps}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-[800px] h-[80vh]">
         <DialogHeader>
           <DialogTitle>Create New Note</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-4 py-4 h-full overflow-hidden">
           <div className="grid gap-2">
             <Label htmlFor="title">Title</Label>
             <Input
@@ -137,15 +188,13 @@ export default function NoteEditor({
               </Select>
             </div>
           </div>
-          <div className="grid gap-2">
+          <div className="grid gap-2 flex-grow overflow-hidden">
             <Label htmlFor="content">Content</Label>
-            <Textarea
-              id="content"
-              placeholder="Write your note here..."
-              rows={8}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-            />
+            <div className="h-[350px] overflow-hidden">
+              <DynamicBlocknoteEditor
+                onChange={handleEditorContentChange}
+              />
+            </div>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="tags">Tags</Label>
@@ -188,12 +237,12 @@ export default function NoteEditor({
           <Button
             className="w-full bg-indigo-600 hover:bg-indigo-700 mt-2"
             onClick={handleSave}
-            disabled={!title.trim()}
+            disabled={!title.trim() || isLoading}
           >
-            Save Note
+            {isLoading ? "Saving..." : "Save Note"}
           </Button>
         </div>
-      </DialogContentComponent>
-    </DialogComponent>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { BlockNoteEditor, PartialBlock } from "@blocknote/core";
-import { BlockNoteView, useBlockNote } from "@blocknote/react";
-import "@blocknote/react/style.css";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import "@blocknote/core/fonts/inter.css";
+import { useCreateBlockNote } from "@blocknote/react";
+import { BlockNoteView } from "@blocknote/mantine";
+import "@blocknote/mantine/style.css";
 import { createClient } from "@/utils/supabase-client";
+import { PartialBlock } from "@blocknote/core";
 
 interface BlocknoteEditorProps {
   initialContent?: string;
@@ -19,14 +21,13 @@ export default function BlocknoteEditor({
   onChange,
   readOnly = false,
 }: BlocknoteEditorProps) {
-  const [savedContent, setSavedContent] = useState<string>("");
-  const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedContent, setSavedContent] = useState<string>(initialContent || "");
 
   // Parse initial content if provided
-  const getInitialContent = useCallback(() => {
+  const initialBlocks = useMemo(() => {
     if (!initialContent) return undefined;
-
     try {
       return JSON.parse(initialContent) as PartialBlock[];
     } catch (error) {
@@ -36,40 +37,13 @@ export default function BlocknoteEditor({
   }, [initialContent]);
 
   // Create editor instance
-  const editor = useBlockNote({
-    initialContent: getInitialContent(),
-    editable: !readOnly,
-    onEditorContentChange: (editor) => {
-      // Get current content as JSON
-      const contentAsJson = JSON.stringify(editor.topLevelBlocks);
-
-      // Call onChange callback if provided
-      if (onChange) {
-        onChange(contentAsJson);
-      }
-
-      // Update saved content state
-      setSavedContent(contentAsJson);
-    },
+  const editor = useCreateBlockNote({
+    initialContent: initialBlocks,
   });
 
-  // Auto-save functionality
-  useEffect(() => {
-    if (!noteId || readOnly) return;
-
-    // Debounce save to avoid too many requests
-    const saveTimeout = setTimeout(() => {
-      if (savedContent && savedContent !== initialContent) {
-        saveNote();
-      }
-    }, 2000);
-
-    return () => clearTimeout(saveTimeout);
-  }, [savedContent, noteId, readOnly]);
-
   // Save note to database
-  const saveNote = async () => {
-    if (!noteId || !savedContent) return;
+  const saveNote = useCallback(async (content: string) => {
+    if (!noteId || !content) return;
 
     try {
       setIsSaving(true);
@@ -78,7 +52,7 @@ export default function BlocknoteEditor({
       const { error } = await supabase
         .from("notes")
         .update({
-          content: savedContent,
+          content: content,
           updated_at: new Date().toISOString(),
         })
         .eq("id", noteId);
@@ -86,17 +60,44 @@ export default function BlocknoteEditor({
       if (error) throw error;
 
       setLastSaved(new Date());
+      setSavedContent(content);
     } catch (error) {
       console.error("Error saving note:", error);
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [noteId]);
+
+  // Handle editor content changes
+  const handleChange = useCallback(() => {
+    if (!editor) return;
+
+    const contentAsJson = JSON.stringify(editor.document);
+
+    // Call onChange callback if provided
+    if (onChange) {
+      onChange(contentAsJson);
+    }
+
+    // Debounce auto-save
+    const saveTimeout = setTimeout(() => {
+      if (!readOnly && noteId && contentAsJson !== savedContent) {
+        saveNote(contentAsJson);
+      }
+    }, 2000);
+
+    return () => clearTimeout(saveTimeout);
+  }, [editor, onChange, readOnly, noteId, savedContent, saveNote]);
 
   return (
     <div className="flex flex-col h-full">
       <div className="flex-grow overflow-auto bg-background border rounded-md">
-        <BlockNoteView editor={editor} theme="light" />
+        <BlockNoteView
+          editor={editor}
+          theme="light"
+          editable={!readOnly}
+          onChange={handleChange}
+        />
       </div>
 
       {noteId && !readOnly && (
