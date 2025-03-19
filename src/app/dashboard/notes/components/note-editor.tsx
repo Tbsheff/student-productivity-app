@@ -23,7 +23,6 @@ import { DynamicBlocknoteEditor } from "./dynamic-editor";
 import { createClient } from "@/utils/supabase-client";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/use-toast";
-import { error } from "console";
 
 interface Course {
   id: string;
@@ -104,15 +103,18 @@ export default function NoteEditor({
       const supabase = createClient();
 
       // Create the note
-      const { data, error } = await supabase.from("notes").insert({
-        title,
-        content,
-        course_id: courseId || null,
-        tags: tags.length > 0 ? tags : null,
-        user_id: userId,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }).select();
+      const { data, error } = await supabase
+        .from("notes")
+        .insert({
+          title,
+          content,
+          course_id: courseId || null,
+          tags: tags.length > 0 ? tags : null,
+          user_id: userId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select();
 
       if (error) throw error;
 
@@ -133,7 +135,6 @@ export default function NoteEditor({
 
       // Refresh the page to show the new note
       router.refresh();
-
     } catch (error) {
       console.error("Error saving note:", error);
       toast({
@@ -196,9 +197,7 @@ export default function NoteEditor({
           <div className="grid gap-2 flex-grow overflow-hidden">
             <Label htmlFor="content">Content</Label>
             <div className="h-[350px] overflow-hidden">
-              <DynamicBlocknoteEditor
-                onChange={handleEditorContentChange}
-              />
+              <DynamicBlocknoteEditor onChange={handleEditorContentChange} />
             </div>
           </div>
           <div className="grid gap-2">
@@ -239,9 +238,7 @@ export default function NoteEditor({
               </Button>
             </div>
           </div>
-          {error && (
-            <div className="text-sm font-medium text-red-500">{error.toString()}</div>
-          )}
+          {/* Error handling is now done via toast notifications */}
           <Button
             className="w-full bg-indigo-600 hover:bg-indigo-700 mt-2"
             onClick={handleSave}

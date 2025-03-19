@@ -23,7 +23,9 @@ export default function BlocknoteEditor({
 }: BlocknoteEditorProps) {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [savedContent, setSavedContent] = useState<string>(initialContent || "");
+  const [savedContent, setSavedContent] = useState<string>(
+    initialContent || "",
+  );
 
   // Parse initial content if provided
   const initialBlocks = useMemo(() => {
@@ -42,31 +44,34 @@ export default function BlocknoteEditor({
   });
 
   // Save note to database
-  const saveNote = useCallback(async (content: string) => {
-    if (!noteId || !content) return;
+  const saveNote = useCallback(
+    async (content: string) => {
+      if (!noteId || !content) return;
 
-    try {
-      setIsSaving(true);
-      const supabase = createClient();
+      try {
+        setIsSaving(true);
+        const supabase = createClient();
 
-      const { error } = await supabase
-        .from("notes")
-        .update({
-          content: content,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", noteId);
+        const { error } = await supabase
+          .from("notes")
+          .update({
+            content: content,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", noteId);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      setLastSaved(new Date());
-      setSavedContent(content);
-    } catch (error) {
-      console.error("Error saving note:", error);
-    } finally {
-      setIsSaving(false);
-    }
-  }, [noteId]);
+        setLastSaved(new Date());
+        setSavedContent(content);
+      } catch (error) {
+        console.error("Error saving note:", error);
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [noteId],
+  );
 
   // Handle editor content changes
   const handleChange = useCallback(() => {
