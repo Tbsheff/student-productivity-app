@@ -213,13 +213,94 @@ export default function CanvasIntegration() {
   const storeEvents = async (events: IcsEvent[]) => {
     try {
       const supabase = createClient();
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
 
       if (sessionError || !session) {
-        throw new Error("Authentication failed: " + (sessionError?.message || "No active session"));
+        throw new Error(
+          "Authentication failed: " +
+            (sessionError?.message || "No active session"),
+        );
       }
 
       const userId = session.user.id;
+
+      // Get existing courses for this user
+      const { data: existingCourses } = await supabase
+        .from("courses")
+        .select("id, name")
+        .eq("user_id", userId);
+
+      // Extract course names from Canvas events
+      const courseNamesFromEvents = new Set<string>();
+      events.forEach((event) => {
+        // Canvas typically includes course name in brackets or parentheses
+        // Example: "Assignment 1 [CS101]" or "Midterm Exam (MATH202)"
+        const titleLower = event.title.toLowerCase();
+        const bracketMatch = event.title.match(/\[(.*?)\]/);
+        const parenthesisMatch = event.title.match(/\((.*?)\)/);
+        const colonMatch = event.title.match(/: (.*?) -/); // Format: "CS101: Intro to Programming - Assignment"
+
+        if (bracketMatch && bracketMatch[1]) {
+          courseNamesFromEvents.add(bracketMatch[1].trim());
+        } else if (parenthesisMatch && parenthesisMatch[1]) {
+          courseNamesFromEvents.add(parenthesisMatch[1].trim());
+        } else if (colonMatch && colonMatch[1]) {
+          courseNamesFromEvents.add(colonMatch[1].trim());
+        } else if (event.location && event.location.trim()) {
+          // Sometimes the course name is in the location field
+          courseNamesFromEvents.add(event.location.trim());
+        }
+      });
+
+      // Create new courses if they don't exist
+      const courseMap = new Map<string, string>(); // Map course name to ID
+      existingCourses?.forEach((course) => {
+        courseMap.set(course.name.toLowerCase(), course.id);
+      });
+
+      // Default colors for new courses
+      const defaultColors = [
+        "#6366F1", // Indigo
+        "#8B5CF6", // Violet
+        "#EC4899", // Pink
+        "#F43F5E", // Rose
+        "#EF4444", // Red
+        "#F97316", // Orange
+        "#F59E0B", // Amber
+        "#10B981", // Emerald
+        "#06B6D4", // Cyan
+        "#3B82F6", // Blue
+      ];
+
+      // Create new courses
+      let colorIndex = 0;
+      for (const courseName of courseNamesFromEvents) {
+        if (!courseMap.has(courseName.toLowerCase())) {
+          const color = defaultColors[colorIndex % defaultColors.length];
+          colorIndex++;
+
+          const { data: newCourse, error } = await supabase
+            .from("courses")
+            .insert({
+              name: courseName,
+              color: color,
+              user_id: userId,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .select("id")
+            .single();
+
+          if (error) {
+            console.error("Error creating course:", error);
+          } else if (newCourse) {
+            courseMap.set(courseName.toLowerCase(), newCourse.id);
+          }
+        }
+      }
 
       for (const event of events) {
         // Validate required fields
@@ -228,33 +309,67 @@ export default function CanvasIntegration() {
           continue;
         }
 
+        // Determine course ID for this event
+        let courseId = null;
+        const bracketMatch = event.title.match(/\[(.*?)\]/);
+        const parenthesisMatch = event.title.match(/\((.*?)\)/);
+        const colonMatch = event.title.match(/: (.*?) -/);
+
+        if (bracketMatch && bracketMatch[1]) {
+          const courseName = bracketMatch[1].trim();
+          courseId = courseMap.get(courseName.toLowerCase()) || null;
+        } else if (parenthesisMatch && parenthesisMatch[1]) {
+          const courseName = parenthesisMatch[1].trim();
+          courseId = courseMap.get(courseName.toLowerCase()) || null;
+        } else if (colonMatch && colonMatch[1]) {
+          const courseName = colonMatch[1].trim();
+          courseId = courseMap.get(courseName.toLowerCase()) || null;
+        } else if (event.location && event.location.trim()) {
+          const courseName = event.location.trim();
+          courseId = courseMap.get(courseName.toLowerCase()) || null;
+        }
+
         // Check if this is an assignment or exam
+        const titleLower = event.title.toLowerCase();
         const isAssignment =
-          event.title.toLowerCase().includes("assignment") ||
-          event.title.toLowerCase().includes("due") ||
-          event.title.toLowerCase().includes("submit");
+          titleLower.includes("assignment") ||
+          titleLower.includes("due") ||
+          titleLower.includes("submit") ||
+          titleLower.includes("homework");
+
+        const isExam =
+          titleLower.includes("exam") ||
+          titleLower.includes("test") ||
+          titleLower.includes("quiz") ||
+          titleLower.includes("midterm") ||
+          titleLower.includes("final");
 
         const payload = {
           title: event.title,
           description: event.description || "",
           due_date: event.start_time,
           status: "todo",
-          priority: isAssignment ? "medium" : "low",
+          priority: isExam ? "high" : isAssignment ? "medium" : "low",
           user_id: userId,
           source: "canvas",
           external_id: event.uid,
+          course: courseId,
         };
 
         try {
           const { error } = await supabase.from("tasks").upsert(payload, {
-            onConflict: 'external_id,user_id'
+            onConflict: "external_id,user_id",
           });
 
           if (error) {
             console.error("Error upserting event:", payload, error);
           }
         } catch (upsertError) {
-          console.error("Unexpected error during upsert:", payload, upsertError);
+          console.error(
+            "Unexpected error during upsert:",
+            payload,
+            upsertError,
+          );
         }
       }
     } catch (error) {

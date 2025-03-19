@@ -191,7 +191,88 @@ export default function TaskDetailsDialog({
                 : "Medium"}{" "}
               Priority
             </Badge>
-            {task.course && <Badge variant="outline">{task.course}</Badge>}
+            {task.course && (
+              <Badge
+                variant="outline"
+                style={{
+                  borderColor: (() => {
+                    // Generate a consistent color based on course name
+                    const courseStr = task.course.toString();
+                    const colors = [
+                      "#6366F1", // Indigo
+                      "#8B5CF6", // Violet
+                      "#EC4899", // Pink
+                      "#F43F5E", // Rose
+                      "#EF4444", // Red
+                      "#F97316", // Orange
+                      "#F59E0B", // Amber
+                      "#10B981", // Emerald
+                      "#06B6D4", // Cyan
+                      "#3B82F6", // Blue
+                    ];
+                    const index =
+                      courseStr
+                        .split("")
+                        .reduce((acc, char) => acc + char.charCodeAt(0), 0) %
+                      colors.length;
+                    return colors[index];
+                  })(),
+                  backgroundColor: (() => {
+                    const courseStr = task.course.toString();
+                    const colors = [
+                      "rgba(99, 102, 241, 0.1)", // Indigo
+                      "rgba(139, 92, 246, 0.1)", // Violet
+                      "rgba(236, 72, 153, 0.1)", // Pink
+                      "rgba(244, 63, 94, 0.1)", // Rose
+                      "rgba(239, 68, 68, 0.1)", // Red
+                      "rgba(249, 115, 22, 0.1)", // Orange
+                      "rgba(245, 158, 11, 0.1)", // Amber
+                      "rgba(16, 185, 129, 0.1)", // Emerald
+                      "rgba(6, 182, 212, 0.1)", // Cyan
+                      "rgba(59, 130, 246, 0.1)", // Blue
+                    ];
+                    const index =
+                      courseStr
+                        .split("")
+                        .reduce((acc, char) => acc + char.charCodeAt(0), 0) %
+                      colors.length;
+                    return colors[index];
+                  })(),
+                }}
+              >
+                <div className="flex items-center">
+                  <div
+                    className="w-2 h-2 rounded-full mr-1"
+                    style={{
+                      backgroundColor: (() => {
+                        const courseStr = task.course.toString();
+                        const colors = [
+                          "#6366F1", // Indigo
+                          "#8B5CF6", // Violet
+                          "#EC4899", // Pink
+                          "#F43F5E", // Rose
+                          "#EF4444", // Red
+                          "#F97316", // Orange
+                          "#F59E0B", // Amber
+                          "#10B981", // Emerald
+                          "#06B6D4", // Cyan
+                          "#3B82F6", // Blue
+                        ];
+                        const index =
+                          courseStr
+                            .split("")
+                            .reduce(
+                              (acc, char) => acc + char.charCodeAt(0),
+                              0,
+                            ) % colors.length;
+                        return colors[index];
+                      })(),
+                    }}
+                  />
+                  {task.course}
+                </div>
+              </Badge>
+            )}
 
             {/* Task Type Badge */}
             {(() => {

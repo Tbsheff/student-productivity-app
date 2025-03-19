@@ -193,7 +193,44 @@ export default function TaskCard({ task }: TaskCardProps) {
               <CardTitle className="line-clamp-1">{task.title}</CardTitle>
               <CardDescription>
                 <div className="flex flex-wrap gap-1 items-center">
-                  <span>{task.course || "No course"}</span>
+                  {task.course ? (
+                    <div className="flex items-center">
+                      <div
+                        className="w-2 h-2 rounded-full mr-1"
+                        style={{
+                          backgroundColor: (() => {
+                            // Generate a consistent color based on course name if no color is provided
+                            const courseStr = task.course.toString();
+                            const colors = [
+                              "#6366F1", // Indigo
+                              "#8B5CF6", // Violet
+                              "#EC4899", // Pink
+                              "#F43F5E", // Rose
+                              "#EF4444", // Red
+                              "#F97316", // Orange
+                              "#F59E0B", // Amber
+                              "#10B981", // Emerald
+                              "#06B6D4", // Cyan
+                              "#3B82F6", // Blue
+                            ];
+                            const index =
+                              courseStr
+                                .split("")
+                                .reduce(
+                                  (acc, char) => acc + char.charCodeAt(0),
+                                  0,
+                                ) % colors.length;
+                            return colors[index];
+                          })(),
+                        }}
+                      />
+                      <span className="text-xs px-1.5 py-0.5 rounded-full bg-secondary">
+                        {task.course}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-xs">No course</span>
+                  )}
                   <span className="mx-1">·</span>
                   <span className={getPriorityColor()}>
                     {task.priority || "medium"} priority
