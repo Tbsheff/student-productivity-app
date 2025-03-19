@@ -7,6 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { createClient } from "@/utils/supabase-client";
 import { useRouter } from "next/navigation";

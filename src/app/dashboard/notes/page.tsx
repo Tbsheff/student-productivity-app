@@ -16,7 +16,11 @@ import ClientNoteButton from "./components/client-note-button";
 import ClientNoteCard from "./components/client-note-card";
 import ClientCourseNoteItem from "./components/client-course-note-item";
 
-export default async function NotesPage() {
+export default async function NotesPage({
+  searchParams,
+}: {
+  searchParams: { view?: string };
+}) {
   const supabase = await createClient();
 
   const {

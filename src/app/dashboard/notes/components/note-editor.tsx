@@ -32,6 +32,7 @@ interface Course {
 
 interface NoteEditorProps {
   courses: Course[];
+  children?: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   userId: string; // Add userId for saving to the database
@@ -39,6 +40,7 @@ interface NoteEditorProps {
 
 export default function NoteEditor({
   courses,
+  children,
   open,
   onOpenChange,
   userId,
@@ -164,7 +166,9 @@ export default function NoteEditor({
               <Label htmlFor="course">Course</Label>
               <Select
                 value={courseId}
-                onValueChange={(value) => setCourseId(value === "none" ? "" : value)}
+                onValueChange={(value) =>
+                  setCourseId(value === "none" ? "" : value)
+                }
               >
                 <SelectTrigger id="course">
                   <SelectValue placeholder="Select a course" />
@@ -234,6 +238,9 @@ export default function NoteEditor({
               </Button>
             </div>
           </div>
+          {error && (
+            <div className="text-sm font-medium text-red-500">{error}</div>
+          )}
           <Button
             className="w-full bg-indigo-600 hover:bg-indigo-700 mt-2"
             onClick={handleSave}
@@ -244,5 +251,7 @@ export default function NoteEditor({
         </div>
       </DialogContent>
     </Dialog>
+      </DialogContent >
+    </Dialog >
   );
 }
