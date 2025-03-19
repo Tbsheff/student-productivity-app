@@ -6,6 +6,8 @@
     "start": "next start"
   },
   "dependencies": {
+    "@blocknote/core": "^0.25.2",
+    "@blocknote/react": "^0.25.2",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-alert-dialog": "^1.1.6",
     "@radix-ui/react-aspect-ratio": "^1.1.2",

@@ -20,6 +20,9 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Tag, X } from "lucide-react";
 import { useState } from "react";
+import { createClient } from "@/utils/supabase-client";
+import { useRouter } from "next/navigation";
+import BlocknoteEditor from "./blocknote-editor";
 
 interface Course {
   id: string;
@@ -29,20 +32,32 @@ interface Course {
 
 interface NoteEditorProps {
   courses: Course[];
+  children?: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  defaultValues?: {
+    title?: string;
+    content?: string;
+    course_id?: string;
+    tags?: string[];
+  };
 }
 
 export default function NoteEditor({
   courses,
+  children,
   open,
   onOpenChange,
+  defaultValues = {},
 }: NoteEditorProps) {
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [courseId, setCourseId] = useState("");
+  const router = useRouter();
+  const [title, setTitle] = useState(defaultValues.title || "");
+  const [content, setContent] = useState(defaultValues.content || "");
+  const [courseId, setCourseId] = useState(defaultValues.course_id || "");
   const [tagInput, setTagInput] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>(defaultValues.tags || []);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -62,39 +77,68 @@ export default function NoteEditor({
     }
   };
 
-  const handleSave = () => {
-    // Save note logic would go here
-    console.log({ title, content, courseId, tags });
-    // Reset form
-    setTitle("");
-    setContent("");
-    setCourseId("");
-    setTags([]);
-    // Close dialog
-    if (onOpenChange) onOpenChange(false);
+  const handleContentChange = (newContent: string) => {
+    setContent(newContent);
   };
 
-  const DialogComponent = open !== undefined ? React.Fragment : Dialog;
-  const DialogContentComponent =
-    open !== undefined ? React.Fragment : DialogContent;
-  const dialogProps = open !== undefined ? {} : {};
-  const dialogContentProps =
-    open !== undefined
-      ? {}
-      : {
-          className: "sm:max-w-[600px]",
-        };
+  const handleSave = async () => {
+    if (!title.trim()) {
+      setError("Title is required");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError("");
+
+    try {
+      const supabase = createClient();
+      const { data: userData } = await supabase.auth.getUser();
+
+      if (!userData.user) {
+        throw new Error("User not authenticated");
+      }
+
+      const noteData = {
+        title,
+        content,
+        course_id: courseId || null,
+        tags,
+        user_id: userData.user.id,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error: saveError } = await supabase
+        .from("notes")
+        .insert(noteData);
+
+      if (saveError) throw saveError;
+
+      // Reset form
+      setTitle("");
+      setContent("");
+      setCourseId("");
+      setTags([]);
+
+      // Close dialog
+      if (onOpenChange) onOpenChange(false);
+
+      // Refresh the page to show the new note
+      router.refresh();
+    } catch (err: any) {
+      console.error("Error saving note:", err);
+      setError(err.message || "Failed to save note");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Use conditional rendering instead of Fragment
+  const isControlled = open !== undefined;
 
   return (
-    <DialogComponent {...dialogProps}>
-      {open === undefined && (
-        <DialogTrigger asChild>
-          <Button className="bg-indigo-600 hover:bg-indigo-700">
-            <Plus className="mr-2 h-4 w-4" /> New Note
-          </Button>
-        </DialogTrigger>
-      )}
-      <DialogContentComponent {...dialogContentProps}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {!isControlled && <DialogTrigger asChild>{children}</DialogTrigger>}
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Note</DialogTitle>
         </DialogHeader>
@@ -113,7 +157,9 @@ export default function NoteEditor({
               <Label htmlFor="course">Course</Label>
               <Select
                 value={courseId}
-                onValueChange={(value) => setCourseId(value === "none" ? "" : value)}
+                onValueChange={(value) =>
+                  setCourseId(value === "none" ? "" : value)
+                }
               >
                 <SelectTrigger id="course">
                   <SelectValue placeholder="Select a course" />
@@ -139,13 +185,12 @@ export default function NoteEditor({
           </div>
           <div className="grid gap-2">
             <Label htmlFor="content">Content</Label>
-            <Textarea
-              id="content"
-              placeholder="Write your note here..."
-              rows={8}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-            />
+            <div className="h-[300px] border rounded-md">
+              <BlocknoteEditor
+                initialContent={content}
+                onChange={handleContentChange}
+              />
+            </div>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="tags">Tags</Label>
@@ -185,15 +230,18 @@ export default function NoteEditor({
               </Button>
             </div>
           </div>
+          {error && (
+            <div className="text-sm font-medium text-red-500">{error}</div>
+          )}
           <Button
             className="w-full bg-indigo-600 hover:bg-indigo-700 mt-2"
             onClick={handleSave}
-            disabled={!title.trim()}
+            disabled={isSubmitting || !title.trim()}
           >
-            Save Note
+            {isSubmitting ? "Saving..." : "Save Note"}
           </Button>
         </div>
-      </DialogContentComponent>
-    </DialogComponent>
+      </DialogContent>
+    </Dialog>
   );
 }

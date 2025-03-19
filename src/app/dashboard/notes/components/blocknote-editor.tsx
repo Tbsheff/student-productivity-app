@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { BlockNoteEditor, PartialBlock } from "@blocknote/core";
-import { BlockNoteView, useBlockNote } from "@blocknote/react";
+import { useBlockNote } from "@blocknote/react";
+import "@blocknote/core/style.css";
 import "@blocknote/react/style.css";
 import { createClient } from "@/utils/supabase-client";
 
@@ -65,7 +66,7 @@ export default function BlocknoteEditor({
     }, 2000);
 
     return () => clearTimeout(saveTimeout);
-  }, [savedContent, noteId, readOnly]);
+  }, [savedContent, noteId, readOnly, initialContent]);
 
   // Save note to database
   const saveNote = async () => {
@@ -96,7 +97,7 @@ export default function BlocknoteEditor({
   return (
     <div className="flex flex-col h-full">
       <div className="flex-grow overflow-auto bg-background border rounded-md">
-        <BlockNoteView editor={editor} theme="light" />
+        {editor && editor.reactEditor}
       </div>
 
       {noteId && !readOnly && (

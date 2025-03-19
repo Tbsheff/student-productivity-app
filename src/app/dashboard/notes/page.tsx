@@ -12,8 +12,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookOpen, FileText, Plus, Search, Tag } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient } from "../../../../supabase/server";
+import dynamic from "next/dynamic";
 
-export default async function NotesPage() {
+// Dynamically import client components
+const NoteEditor = dynamic(() => import("./components/note-editor"), {
+  ssr: false,
+});
+
+const NoteDetail = dynamic(() => import("./components/note-detail"), {
+  ssr: false,
+});
+
+export default async function NotesPage({
+  searchParams,
+}: {
+  searchParams: { view?: string };
+}) {
   const supabase = await createClient();
 
   const {
@@ -60,9 +74,11 @@ export default async function NotesPage() {
             Organize your study notes and materials
           </p>
         </div>
-        <Button className="bg-indigo-600 hover:bg-indigo-700">
-          <Plus className="mr-2 h-4 w-4" /> New Note
-        </Button>
+        <NoteEditor courses={courses || []}>
+          <Button className="bg-indigo-600 hover:bg-indigo-700">
+            <Plus className="mr-2 h-4 w-4" /> New Note
+          </Button>
+        </NoteEditor>
       </div>
 
       <div className="mt-6 flex items-center space-x-2">
@@ -86,52 +102,87 @@ export default async function NotesPage() {
           {notes && notes.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {notes.map((note) => (
-                <Card key={note.id} className="overflow-hidden">
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="line-clamp-1">
-                          {note.title}
-                        </CardTitle>
-                        {note.courses && (
-                          <CardDescription>
-                            <div className="flex items-center mt-1">
-                              <div
-                                className="w-3 h-3 rounded-full mr-2"
-                                style={{
-                                  backgroundColor:
-                                    note.courses.color || "#6366F1",
-                                }}
-                              />
-                              {note.courses.name}
-                            </div>
-                          </CardDescription>
+                <NoteDetail
+                  key={`detail-${note.id}`}
+                  noteId={note.id}
+                  open={searchParams.view === note.id}
+                  onOpenChange={() => {}}
+                >
+                  <Card
+                    key={note.id}
+                    className="overflow-hidden cursor-pointer hover:border-indigo-300 transition-colors"
+                  >
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="line-clamp-1">
+                            {note.title}
+                          </CardTitle>
+                          {note.courses && (
+                            <CardDescription>
+                              <div className="flex items-center mt-1">
+                                <div
+                                  className="w-3 h-3 rounded-full mr-2"
+                                  style={{
+                                    backgroundColor:
+                                      note.courses.color || "#6366F1",
+                                  }}
+                                />
+                                {note.courses.name}
+                              </div>
+                            </CardDescription>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(note.updated_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="line-clamp-3 text-sm text-muted-foreground">
+                        {note.content ? (
+                          <div className="prose prose-sm max-w-none dark:prose-invert">
+                            {/* Display a simplified preview of the content */}
+                            {(() => {
+                              try {
+                                const content = JSON.parse(note.content);
+                                // Extract text from the first few blocks for preview
+                                return (
+                                  content
+                                    .slice(0, 2)
+                                    .map(
+                                      (block: any) =>
+                                        block.content?.[0]?.text || "",
+                                    )
+                                    .join(" ")
+                                    .substring(0, 150) +
+                                  (note.content.length > 150 ? "..." : "")
+                                );
+                              } catch (e) {
+                                return "No content";
+                              }
+                            })()}
+                          </div>
+                        ) : (
+                          "No content"
                         )}
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(note.updated_at).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="line-clamp-3 text-sm text-muted-foreground">
-                      {note.content || "No content"}
-                    </div>
-                    {note.tags && note.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-3">
-                        {note.tags.map((tag: string, index: number) => (
-                          <div
-                            key={index}
-                            className="px-2 py-0.5 bg-secondary text-secondary-foreground rounded-full text-xs flex items-center"
-                          >
-                            <Tag className="h-3 w-3 mr-1" />
-                            {tag}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                      {note.tags && note.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-3">
+                          {note.tags.map((tag: string, index: number) => (
+                            <div
+                              key={index}
+                              className="px-2 py-0.5 bg-secondary text-secondary-foreground rounded-full text-xs flex items-center"
+                            >
+                              <Tag className="h-3 w-3 mr-1" />
+                              {tag}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </NoteDetail>
               ))}
             </div>
           ) : (
@@ -141,9 +192,11 @@ export default async function NotesPage() {
                 <p className="text-center text-muted-foreground mb-2">
                   No notes yet. Create your first note to get started.
                 </p>
-                <Button className="mt-2 bg-indigo-600 hover:bg-indigo-700">
-                  <Plus className="mr-2 h-4 w-4" /> New Note
-                </Button>
+                <NoteEditor courses={courses || []}>
+                  <Button className="mt-2 bg-indigo-600 hover:bg-indigo-700">
+                    <Plus className="mr-2 h-4 w-4" /> New Note
+                  </Button>
+                </NoteEditor>
               </CardContent>
             </Card>
           )}
@@ -153,52 +206,85 @@ export default async function NotesPage() {
           {notes && notes.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {notes.slice(0, 6).map((note) => (
-                <Card key={note.id} className="overflow-hidden">
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="line-clamp-1">
-                          {note.title}
-                        </CardTitle>
-                        {note.courses && (
-                          <CardDescription>
-                            <div className="flex items-center mt-1">
-                              <div
-                                className="w-3 h-3 rounded-full mr-2"
-                                style={{
-                                  backgroundColor:
-                                    note.courses.color || "#6366F1",
-                                }}
-                              />
-                              {note.courses.name}
-                            </div>
-                          </CardDescription>
+                <NoteDetail
+                  key={`detail-${note.id}`}
+                  noteId={note.id}
+                  open={searchParams.view === note.id}
+                  onOpenChange={() => {}}
+                >
+                  <Card
+                    key={note.id}
+                    className="overflow-hidden cursor-pointer hover:border-indigo-300 transition-colors"
+                  >
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="line-clamp-1">
+                            {note.title}
+                          </CardTitle>
+                          {note.courses && (
+                            <CardDescription>
+                              <div className="flex items-center mt-1">
+                                <div
+                                  className="w-3 h-3 rounded-full mr-2"
+                                  style={{
+                                    backgroundColor:
+                                      note.courses.color || "#6366F1",
+                                  }}
+                                />
+                                {note.courses.name}
+                              </div>
+                            </CardDescription>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(note.updated_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="line-clamp-3 text-sm text-muted-foreground">
+                        {note.content ? (
+                          <div className="prose prose-sm max-w-none dark:prose-invert">
+                            {(() => {
+                              try {
+                                const content = JSON.parse(note.content);
+                                return (
+                                  content
+                                    .slice(0, 2)
+                                    .map(
+                                      (block: any) =>
+                                        block.content?.[0]?.text || "",
+                                    )
+                                    .join(" ")
+                                    .substring(0, 150) +
+                                  (note.content.length > 150 ? "..." : "")
+                                );
+                              } catch (e) {
+                                return "No content";
+                              }
+                            })()}
+                          </div>
+                        ) : (
+                          "No content"
                         )}
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(note.updated_at).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="line-clamp-3 text-sm text-muted-foreground">
-                      {note.content || "No content"}
-                    </div>
-                    {note.tags && note.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-3">
-                        {note.tags.map((tag: string, index: number) => (
-                          <div
-                            key={index}
-                            className="px-2 py-0.5 bg-secondary text-secondary-foreground rounded-full text-xs flex items-center"
-                          >
-                            <Tag className="h-3 w-3 mr-1" />
-                            {tag}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                      {note.tags && note.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-3">
+                          {note.tags.map((tag: string, index: number) => (
+                            <div
+                              key={index}
+                              className="px-2 py-0.5 bg-secondary text-secondary-foreground rounded-full text-xs flex items-center"
+                            >
+                              <Tag className="h-3 w-3 mr-1" />
+                              {tag}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </NoteDetail>
               ))}
             </div>
           ) : (
@@ -237,17 +323,26 @@ export default async function NotesPage() {
                       {courseNotes.length > 0 ? (
                         <div className="space-y-2">
                           {courseNotes.slice(0, 3).map((note) => (
-                            <div
-                              key={note.id}
-                              className="p-2 rounded-md border hover:bg-accent cursor-pointer"
+                            <NoteDetail
+                              key={`detail-${note.id}`}
+                              noteId={note.id}
+                              open={searchParams.view === note.id}
+                              onOpenChange={() => {}}
                             >
-                              <div className="font-medium line-clamp-1">
-                                {note.title}
+                              <div
+                                key={note.id}
+                                className="p-2 rounded-md border hover:bg-accent cursor-pointer"
+                              >
+                                <div className="font-medium line-clamp-1">
+                                  {note.title}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {new Date(
+                                    note.updated_at,
+                                  ).toLocaleDateString()}
+                                </div>
                               </div>
-                              <div className="text-xs text-muted-foreground">
-                                {new Date(note.updated_at).toLocaleDateString()}
-                              </div>
-                            </div>
+                            </NoteDetail>
                           ))}
                           {courseNotes.length > 3 && (
                             <Button
@@ -263,9 +358,14 @@ export default async function NotesPage() {
                           <p className="text-sm text-muted-foreground mb-2">
                             No notes for this course yet
                           </p>
-                          <Button variant="outline" size="sm">
-                            <Plus className="mr-2 h-3 w-3" /> Add Note
-                          </Button>
+                          <NoteEditor
+                            courses={courses || []}
+                            defaultValues={{ course_id: course.id }}
+                          >
+                            <Button variant="outline" size="sm">
+                              <Plus className="mr-2 h-3 w-3" /> Add Note
+                            </Button>
+                          </NoteEditor>
                         </div>
                       )}
                     </CardContent>
@@ -311,17 +411,26 @@ export default async function NotesPage() {
                       {tagNotes.length > 0 && (
                         <div className="space-y-2">
                           {tagNotes.slice(0, 3).map((note) => (
-                            <div
-                              key={note.id}
-                              className="p-2 rounded-md border hover:bg-accent cursor-pointer"
+                            <NoteDetail
+                              key={`detail-${note.id}`}
+                              noteId={note.id}
+                              open={searchParams.view === note.id}
+                              onOpenChange={() => {}}
                             >
-                              <div className="font-medium line-clamp-1">
-                                {note.title}
+                              <div
+                                key={note.id}
+                                className="p-2 rounded-md border hover:bg-accent cursor-pointer"
+                              >
+                                <div className="font-medium line-clamp-1">
+                                  {note.title}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {new Date(
+                                    note.updated_at,
+                                  ).toLocaleDateString()}
+                                </div>
                               </div>
-                              <div className="text-xs text-muted-foreground">
-                                {new Date(note.updated_at).toLocaleDateString()}
-                              </div>
-                            </div>
+                            </NoteDetail>
                           ))}
                           {tagNotes.length > 3 && (
                             <Button
